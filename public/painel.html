@@ -84,6 +84,27 @@
             const result = await response.json();
             console.log('Resposta bem sucedida:', result);
             
+            if (result.success) {
+                if (result.checkoutUrl) {
+                    // Redireciona para a página do checkout
+                    window.location.href = result.checkoutUrl;
+                } else if (result.downloadUrl) {
+                    // Inicia o download
+                    const link = document.createElement('a');
+                    link.href = result.downloadUrl;
+                    link.download = 'checkout.html'; // ou o nome apropriado
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert('Checkout gerado com sucesso, mas nenhuma URL foi fornecida!');
+                }
+            }
+            
+            if (response.ok) {
+                alert('Checkout gerado com sucesso! O download começará automaticamente.');
+            }
+            
         } catch (error) {
             console.error('Erro ao enviar formulário:', error);
             alert('Erro ao enviar formulário: ' + error.message);

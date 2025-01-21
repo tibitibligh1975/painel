@@ -56,10 +56,13 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
         const archive = archiver('zip');
         const output = fs.createWriteStream(path.join(__dirname, 'temp/checkout.zip'));
 
+        // Importante: Mova o res.download para dentro do evento 'close'
         output.on('close', () => {
+            // Envia o arquivo para download
             res.download(path.join(__dirname, 'temp/checkout.zip'), 'checkout-files.zip', (err) => {
                 if (err) {
                     console.error('Erro ao enviar arquivo:', err);
+                    res.status(500).send('Erro ao fazer download do arquivo');
                 }
                 // Limpa os arquivos temporários
                 fs.unlinkSync(path.join(__dirname, 'temp/checkout.zip'));
@@ -67,6 +70,11 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
                     fs.unlinkSync(req.file.path);
                 }
             });
+        });
+
+        archive.on('error', (err) => {
+            console.error('Erro ao criar arquivo ZIP:', err);
+            res.status(500).send('Erro ao criar arquivo ZIP');
         });
 
         archive.pipe(output);
@@ -93,17 +101,8 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
             );
         }
 
-        archive.finalize();
-
-        console.log('Processando checkout...');
-        
-        // Se houver upload de arquivo
-        if (req.files && req.files.logo) {
-            console.log('Logo recebido:', req.files.logo.name);
-        }
-        
-        console.log('Checkout gerado com sucesso');
-        res.json({ success: true, /* outros dados */ });
+        console.log('Finalizando arquivo ZIP...');
+        await archive.finalize();
         
     } catch (error) {
         console.error('Erro ao gerar checkout:', error);
