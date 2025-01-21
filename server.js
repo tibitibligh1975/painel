@@ -9,8 +9,13 @@ const upload = multer({ dest: 'uploads/' });
 
 app.use(express.static('public'));
 
-// Add this new route to serve your main page
+// Rota para o painel administrativo
 app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/painel.html'));
+});
+
+// Rota para preview do checkout (opcional)
+app.get('/preview', (req, res) => {
     res.sendFile(path.join(__dirname, 'templates/index.html'));
 });
 
