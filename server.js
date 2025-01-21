@@ -26,10 +26,11 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
             price
         } = req.body;
 
-        // Lê o template do checkout
+        // Lê os templates
         let checkoutTemplate = fs.readFileSync(path.join(__dirname, 'templates/index.html'), 'utf8');
+        let sucessoTemplate = fs.readFileSync(path.join(__dirname, 'templates/sucesso.html'), 'utf8');
 
-        // Substitui as variáveis no template
+        // Substitui as variáveis em ambos os templates
         checkoutTemplate = checkoutTemplate
             .replace(/Checkout Padrao/g, name)
             .replace(/suporte@gmail\.com/g, email)
@@ -38,6 +39,10 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
             .replace(/NOME DO PRODUTO/g, productName)
             .replace(/Descrição do produto/g, productDescription)
             .replace(/R\$ 97,00/g, `R$ ${price}`);
+
+        sucessoTemplate = sucessoTemplate
+            .replace(/Checkout Padrao/g, name)
+            .replace(/NOME DO PRODUTO/g, productName);
 
         // Cria um arquivo ZIP
         const archive = archiver('zip');
@@ -60,16 +65,25 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
 
         // Adiciona os arquivos ao ZIP
         archive.append(checkoutTemplate, { name: 'index.html' });
+        archive.append(sucessoTemplate, { name: 'sucesso.html' });
         
         if (req.file) {
             archive.file(req.file.path, { name: 'images/logo.webp' });
         }
 
-        // Adiciona os SVGs
-        archive.append(fs.createReadStream(path.join(__dirname, 'templates/images/tip-copy-paste.svg')), 
-            { name: 'images/tip-copy-paste.svg' });
-        archive.append(fs.createReadStream(path.join(__dirname, 'templates/images/tip-smartphone-confirmation.svg')), 
-            { name: 'images/tip-smartphone-confirmation.svg' });
+        // Adiciona todos os SVGs necessários
+        const imageFiles = [
+            'tip-copy-paste.svg',
+            'tip-smartphone-confirmation.svg',
+            // Adicione aqui outros arquivos de imagem necessários
+        ];
+
+        for (const image of imageFiles) {
+            archive.append(
+                fs.createReadStream(path.join(__dirname, 'templates/images', image)), 
+                { name: `images/${image}` }
+            );
+        }
 
         archive.finalize();
 
