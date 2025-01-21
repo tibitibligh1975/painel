@@ -20,6 +20,9 @@ app.get('/preview', (req, res) => {
 });
 
 app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
+    console.log('Recebida requisição de checkout');
+    console.log('Dados recebidos:', req.body);
+    
     try {
         const {
             name,
@@ -92,9 +95,19 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
 
         archive.finalize();
 
+        console.log('Processando checkout...');
+        
+        // Se houver upload de arquivo
+        if (req.files && req.files.logo) {
+            console.log('Logo recebido:', req.files.logo.name);
+        }
+        
+        console.log('Checkout gerado com sucesso');
+        res.json({ success: true, /* outros dados */ });
+        
     } catch (error) {
-        console.error('Erro:', error);
-        res.status(500).send('Erro ao gerar os arquivos');
+        console.error('Erro ao gerar checkout:', error);
+        res.status(500).send(error.message);
     }
 });
 

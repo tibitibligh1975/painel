@@ -56,5 +56,39 @@
         
         <button type="submit">Gerar Checkout</button>
     </form>
+
+    <script>
+    document.querySelector('form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        console.log('Formulário submetido');
+        const formData = new FormData(this);
+        
+        try {
+            console.log('Dados do formulário:', Object.fromEntries(formData));
+            
+            const response = await fetch('/generate-checkout', {
+                method: 'POST',
+                body: formData
+            });
+            
+            console.log('Status da resposta:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Erro na resposta:', errorText);
+                alert('Erro ao gerar checkout: ' + errorText);
+                return;
+            }
+            
+            const result = await response.json();
+            console.log('Resposta bem sucedida:', result);
+            
+        } catch (error) {
+            console.error('Erro ao enviar formulário:', error);
+            alert('Erro ao enviar formulário: ' + error.message);
+        }
+    });
+    </script>
 </body>
 </html> 
