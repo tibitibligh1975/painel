@@ -9,6 +9,11 @@ const upload = multer({ dest: 'uploads/' });
 
 app.use(express.static('public'));
 
+// Add this new route to serve your main page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'templates/index.html'));
+});
+
 app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
     try {
         const {
