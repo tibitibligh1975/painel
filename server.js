@@ -7,6 +7,16 @@ const archiver = require('archiver');
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 
+// Criar pasta temp se não existir
+if (!fs.existsSync(path.join(__dirname, 'temp'))) {
+    fs.mkdirSync(path.join(__dirname, 'temp'));
+}
+
+// Criar pasta uploads se não existir
+if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
+    fs.mkdirSync(path.join(__dirname, 'uploads'));
+}
+
 app.use(express.static('public'));
 
 // Rota para o painel administrativo
@@ -20,10 +30,22 @@ app.get('/preview', (req, res) => {
 });
 
 app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
+    // Aumenta o timeout da resposta
+    res.setTimeout(120000); // 2 minutos
+    
     console.log('Recebida requisição de checkout');
     console.log('Dados recebidos:', req.body);
     
     try {
+        // Verifica se os templates existem antes de tentar ler
+        const templatesPath = path.join(__dirname, 'templates');
+        if (!fs.existsSync(path.join(templatesPath, 'index.html'))) {
+            throw new Error('Template index.html não encontrado');
+        }
+        if (!fs.existsSync(path.join(templatesPath, 'sucesso.html'))) {
+            throw new Error('Template sucesso.html não encontrado');
+        }
+
         const {
             name,
             email,
@@ -35,8 +57,8 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
         } = req.body;
 
         // Lê os templates
-        let checkoutTemplate = fs.readFileSync(path.join(__dirname, 'templates/index.html'), 'utf8');
-        let sucessoTemplate = fs.readFileSync(path.join(__dirname, 'templates/sucesso.html'), 'utf8');
+        let checkoutTemplate = fs.readFileSync(path.join(templatesPath, 'index.html'), 'utf8');
+        let sucessoTemplate = fs.readFileSync(path.join(templatesPath, 'sucesso.html'), 'utf8');
 
         // Substitui as variáveis em ambos os templates
         checkoutTemplate = checkoutTemplate
@@ -52,29 +74,44 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
             .replace(/Checkout Padrao/g, name)
             .replace(/NOME DO PRODUTO/g, productName);
 
-        // Cria um arquivo ZIP
-        const archive = archiver('zip');
-        const output = fs.createWriteStream(path.join(__dirname, 'temp/checkout.zip'));
+        // Adiciona tratamento de erro para o arquivo ZIP
+        const zipPath = path.join(__dirname, 'temp/checkout.zip');
+        if (fs.existsSync(zipPath)) {
+            fs.unlinkSync(zipPath); // Remove arquivo ZIP anterior se existir
+        }
 
-        // Importante: Mova o res.download para dentro do evento 'close'
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Nível máximo de compressão
+        });
+
+        const output = fs.createWriteStream(zipPath);
+
         output.on('close', () => {
-            // Envia o arquivo para download
-            res.download(path.join(__dirname, 'temp/checkout.zip'), 'checkout-files.zip', (err) => {
+            console.log('Arquivo ZIP criado com sucesso');
+            res.download(zipPath, 'checkout-files.zip', (err) => {
                 if (err) {
                     console.error('Erro ao enviar arquivo:', err);
-                    res.status(500).send('Erro ao fazer download do arquivo');
+                    return res.status(500).send('Erro ao fazer download do arquivo');
                 }
                 // Limpa os arquivos temporários
-                fs.unlinkSync(path.join(__dirname, 'temp/checkout.zip'));
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
+                try {
+                    fs.unlinkSync(zipPath);
+                    if (req.file) {
+                        fs.unlinkSync(req.file.path);
+                    }
+                } catch (cleanupError) {
+                    console.error('Erro ao limpar arquivos temporários:', cleanupError);
                 }
             });
         });
 
         archive.on('error', (err) => {
             console.error('Erro ao criar arquivo ZIP:', err);
-            res.status(500).send('Erro ao criar arquivo ZIP');
+            return res.status(500).send('Erro ao criar arquivo ZIP');
+        });
+
+        archive.on('warning', (err) => {
+            console.warn('Aviso ao criar ZIP:', err);
         });
 
         archive.pipe(output);
@@ -96,7 +133,7 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
 
         for (const image of imageFiles) {
             archive.append(
-                fs.createReadStream(path.join(__dirname, 'templates/images', image)), 
+                fs.createReadStream(path.join(templatesPath, 'images', image)), 
                 { name: `images/${image}` }
             );
         }
@@ -106,7 +143,11 @@ app.post('/generate-checkout', upload.single('logo'), async (req, res) => {
         
     } catch (error) {
         console.error('Erro ao gerar checkout:', error);
-        res.status(500).send(error.message);
+        return res.status(500).json({
+            error: true,
+            message: error.message,
+            details: error.stack
+        });
     }
 });
 
