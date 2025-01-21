@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Personalização - Checkout</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #00C853;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #14A351;
+        }
+        .preview {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+        }
+        #logoPreview {
+            max-width: 200px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Personalização do Checkout</h1>
+        
+        <form id="checkoutForm">
+            <div class="form-group">
+                <label for="name">Nome do Checkout:</label>
+                <input type="text" id="name" name="name" value="Checkout Padrao" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="suporte@gmail.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Telefone:</label>
+                <input type="text" id="phone" name="phone" value="5511912345678" required>
+            </div>
+
+            <div class="form-group">
+                <label for="offerId">ID da Oferta:</label>
+                <input type="text" id="offerId" name="offerId" value="75544af2-e8a3-47b0-97a8-5ac21c61562d" required>
+            </div>
+
+            <div class="form-group">
+                <label for="productName">Nome do Produto:</label>
+                <input type="text" id="productName" name="productName" value="NOME DO PRODUTO" required>
+            </div>
+
+            <div class="form-group">
+                <label for="productDescription">Descrição do Produto:</label>
+                <textarea id="productDescription" name="productDescription" rows="3" required>Descrição do produto</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="price">Valor Total (R$):</label>
+                <input type="text" id="price" name="price" value="97,00" required>
+            </div>
+
+            <div class="form-group">
+                <label for="logo">Logo do Checkout:</label>
+                <input type="file" id="logo" name="logo" accept="image/*">
+                <img id="logoPreview" src="#" alt="Preview da logo" style="display: none;">
+            </div>
+
+            <button type="submit">Gerar Arquivos</button>
+        </form>
+
+        <div class="preview" id="preview">
+            <h3>Preview das alterações</h3>
+            <div id="previewContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('checkoutForm');
+        const logoInput = document.getElementById('logo');
+        const logoPreview = document.getElementById('logoPreview');
+
+        // Preview da logo
+        logoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    logoPreview.src = e.target.result;
+                    logoPreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Envio do formulário
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/generate-checkout', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'checkout-files.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                } else {
+                    alert('Erro ao gerar os arquivos');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao gerar os arquivos');
+            }
+        });
+    </script>
+</body>
+</html> 
