@@ -69,7 +69,7 @@
             
             const response = await fetch('/generate-checkout', {
                 method: 'POST',
-                body: formData
+                body: formData  // Mantém formData para envio de arquivo
             });
             
             console.log('Status da resposta:', response.status);
@@ -81,28 +81,26 @@
                 return;
             }
             
-            const result = await response.json();
-            console.log('Resposta bem sucedida:', result);
-            
-            if (result.success) {
-                if (result.checkoutUrl) {
-                    // Redireciona para a página do checkout
-                    window.location.href = result.checkoutUrl;
-                } else if (result.downloadUrl) {
-                    // Inicia o download
-                    const link = document.createElement('a');
-                    link.href = result.downloadUrl;
-                    link.download = 'checkout.html'; // ou o nome apropriado
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                } else {
-                    alert('Checkout gerado com sucesso, mas nenhuma URL foi fornecida!');
-                }
-            }
-            
-            if (response.ok) {
+            // Verifica o tipo de conteúdo da resposta
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/zip')) {
+                // É um arquivo ZIP, vamos fazer o download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'checkout-files.zip';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
                 alert('Checkout gerado com sucesso! O download começará automaticamente.');
+            } else {
+                // Se não for ZIP, trata como resposta normal
+                const text = await response.text();
+                console.log('Resposta:', text);
+                alert('Operação concluída!');
             }
             
         } catch (error) {
