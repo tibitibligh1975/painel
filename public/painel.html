@@ -129,18 +129,18 @@
         <form action="/generate-checkout" method="POST" enctype="multipart/form-data">
             <div class="card">
                 <div class="form-group">
-                    <label>Nome do Checkout:</label>
-                    <input type="text" name="name" required placeholder="Ex: Checkout Principal">
+                    <label>Nome do Checkout: <span style="color: #888; font-size: 12px;">(Padrão: Exattus)</span></label>
+                    <input type="text" name="name" required placeholder="Ex: Exattus">
                 </div>
                 
                 <div class="form-group">
-                    <label>Email:</label>
-                    <input type="email" name="email" required placeholder="seu@email.com">
+                    <label>Email: <span style="color: #888; font-size: 12px;">(Padrão: plataformaexattus@gmail.com)</span></label>
+                    <input type="email" name="email" required placeholder="plataformaexattus@gmail.com">
                 </div>
                 
                 <div class="form-group">
-                    <label>Telefone:</label>
-                    <input type="text" name="phone" required placeholder="(11) 99999-9999">
+                    <label>Telefone: <span style="color: #888; font-size: 12px;">(Padrão: 11951923604)</span></label>
+                    <input type="text" name="phone" required placeholder="11951923604">
                 </div>
                 
                 <div class="form-group">
@@ -166,7 +166,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Logo:</label>
+                    <label>Logo: <span style="color: #888; font-size: 12px;">(Tamanho recomendado: 256x50 pixels)</span></label>
                     <div class="file-input-wrapper">
                         <div class="file-input-button">Escolher arquivo</div>
                         <input type="file" name="logo" accept="image/*" onchange="updateFileName(this)">
